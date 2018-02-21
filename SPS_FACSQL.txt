@@ -1,0 +1,426 @@
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  StoredProcedure [dbo].[SP_INT_LISTADOBATCH]    Script Date: 2/21/2018 5:52:03 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[SP_INT_LISTADOBATCH] @Serie int,@FechaIni  varchar(10),@FechaFin  varchar(10)
+AS
+if @Serie <> 0 
+	select Estado=case isnull(a.U_ESTADO_FACE,'P') when 'P' then 'Pendiente' when 'R' then 'Rechazado' when 'A' then 'Autorizado' end ,
+	a.docentry 'Correlativo',
+	'Tipo Documento'= case a.DocSubType when '--' then 'Factura' when 'DN' then 'Nota Debito' End ,
+	b.SeriesName 'Serie', 
+	DocNum 'No. Documento',convert(char(10),DocDate,103)  'Fecha Documento' ,CardName  'Cliente',
+	convert(numeric(18,2),DocTotal,1)  'Total Documento', case dbo.ufn_EstadoDocumento(a.docentry) when 'A' then 'Anulado' else 'Vigente' end 'Estado del Documento' 
+	from oinv a 
+	inner join NNM1 b 
+	on a.Series = b.Series 
+	where isnull(U_ESTADO_FACE,'P') in ('P','R')  
+	and a.docdate between @FechaIni and  @FechaFin
+	and   b.Series = @Serie 
+	union 
+	select Estado=case isnull(a.U_ESTADO_FACE,'P') when 'P' then 'Pendiente' when 'R' then 'Rechazado' when 'A' then 'Autorizado' end ,
+	a.docentry 'Correlativo','Nota Credito' 'Tipo Documento',	b.SeriesName 'Serie',  DocNum 'No. Documento',convert(char(10),DocDate,103)  'Fecha Documento' ,
+	CardName  'Cliente',convert(numeric(18,2),DocTotal,1)  'Total Documento', case dbo.ufn_EstadoDocumentoNC(a.docentry) when 'A' then 'Anulado' else 'Vigente' end 'Estado del Documento'   
+	from ORIN  a 
+	inner join NNM1 b 
+	on a.Series = b.Series  
+	where isnull(U_ESTADO_FACE,'P') in ('P','R')  
+	and a.docdate between @FechaIni and  @FechaFin
+	and   b.Series = @Serie 
+	order by b.SeriesName, Correlativo 
+else
+	select Estado=case isnull(a.U_ESTADO_FACE,'P') when 'P' then 'Pendiente' when 'R' then 'Rechazado' when 'A' then 'Autorizado' end ,
+	a.docentry 'Correlativo',
+	'Tipo Documento'= case a.DocSubType when '--' then 'Factura' when 'DN' then 'Nota Debito' End , 
+	b.SeriesName 'Serie', 
+	DocNum 'No. Documento',convert(char(10),DocDate,103)  'Fecha Documento' ,CardName  'Cliente',
+	convert(numeric(18,2),DocTotal,1)  'Total Documento', case dbo.ufn_EstadoDocumento(a.docentry) when 'A' then 'Anulado' else 'Vigente' end 'Estado del Documento' 
+	from oinv a 
+	inner join NNM1 b 
+	on a.Series = b.Series 
+	where isnull(U_ESTADO_FACE,'P') in ('P','R')  
+	and a.docdate between @FechaIni and  @FechaFin
+	and   b.Series in (select U_SERIE from [@FACE_RESOLUCION] where U_ES_BATCH='Y')
+	union 
+	select Estado=case isnull(a.U_ESTADO_FACE,'P') when 'P' then 'Pendiente' when 'R' then 'Rechazado' when 'A' then 'Autorizado' end ,
+	a.docentry 'Correlativo','Nota Credito' 'Tipo Documento',	b.SeriesName 'Serie',  DocNum 'No. Documento',convert(char(10),DocDate,103)  'Fecha Documento' ,
+	CardName  'Cliente',convert(numeric(18,2),DocTotal,1)  'Total Documento', case dbo.ufn_EstadoDocumentoNC(a.docentry) when 'A' then 'Anulado' else 'Vigente' end 'Estado del Documento'   
+	from ORIN  a 
+	inner join NNM1 b 
+	on a.Series = b.Series  
+	where isnull(U_ESTADO_FACE,'P') in ('P','R')  
+	and a.docdate between @FechaIni and  @FechaFin
+	and   b.Series in (select U_SERIE from [@FACE_RESOLUCION] where U_ES_BATCH='Y')
+	order by b.SeriesName, Correlativo
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	-------------------------------------------------------------------------
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  StoredProcedure [dbo].[SP_IT_DATOS_DETALLE]    Script Date: 2/21/2018 5:52:30 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[SP_IT_DATOS_DETALLE] (@DOCENTRY VARCHAR(10),@TIPODOC CHAR(4))
+AS
+
+DECLARE @DOCRATE AS NUMERIC(19,6)
+DECLARE @MONEDA AS VARCHAR(3)
+
+IF @TIPODOC ='FAC' OR @TIPODOC='ND'
+	SELECT @MONEDA=DOCCUR,@DOCRATE=DOCRATE
+	FROM OINV 
+	WHERE DOCENTRY=@DOCENTRY
+ELSE
+	SELECT @MONEDA=DOCCUR,@DOCRATE=DOCRATE
+	FROM ORIN 
+	WHERE DOCENTRY=@DOCENTRY
+	
+IF @MONEDA <> 'USD'
+	SET @DOCRATE=1
+	
+IF @TIPODOC ='FAC' OR @TIPODOC='ND'
+	SELECT 
+		ISNULL(A.Quantity,0) CANTIDAD,
+		ISNULL(A.ItemCode,'N/A') CODIGO_PRODUCTO,
+		ISNULL(A.dscription,'N/A') DESCRIPCION_PRODUCTO,
+		ISNULL(A.gtotal,0) MONTO_BRUTO,
+		ISNULL(A.Price,0)  * @DOCRATE PRECIO_UNITARIO,
+		A.TaxCode TIPO_IMPUESTO,
+		CASE A.TAXCODE WHEN 'EXE' THEN A.GTotal  ELSE 0 END IMPORTE_EXENTO,
+		ISNULL(A.GTotal,0)  IMPORTE_NETO_GRAVADO,
+		ISNULL(A.GTOTAL,0)  TOTAL_OPERACION,
+		0.00000 MONTO_DESCUENTO,
+		ISNULL(I.UomCode,'N/D') UNIDAD_MEDIDA,
+		'UND' UNIDAD_MEDIDA,
+		ISNULL(A.VatSum,0) IMPUESTO,
+		B.DocType TIPO_DOC,
+		0.0000 IMPORTE_OTROS_IMPUESTOS,
+		0.0000 TOTAL_DESCUENTO_LINEA
+	FROM INV1 A
+	INNER JOIN OINV B
+	ON A.DocEntry  = B.DocEntry 
+	INNER JOIN OITM C
+	ON A.ItemCode =C.ItemCode 
+	inner join inv1 I 
+	ON I.DocEntry  = A.DocEntry  
+	WHERE A.DocEntry = @DOCENTRY
+ELSE
+	SELECT 
+		ISNULL(A.Quantity,0) CANTIDAD,
+		ISNULL(A.ItemCode,'N/A') CODIGO_PRODUCTO,
+		ISNULL(A.dscription,'N/A') DESCRIPCION_PRODUCTO,
+		ISNULL(A.gtotal,0) MONTO_BRUTO,
+		ISNULL(A.Price,0)  * @DOCRATE PRECIO_UNITARIO,
+		A.TaxCode TIPO_IMPUESTO,
+		CASE A.TAXCODE WHEN 'EXE' THEN A.GTotal  ELSE 0 END IMPORTE_EXENTO,
+		ISNULL(A.GTotal,0)  IMPORTE_NETO_GRAVADO,
+		ISNULL(A.GTOTAL,0)  TOTAL_OPERACION,
+		0.00000 MONTO_DESCUENTO,
+		ISNULL(I.UomCode,'N/D') UNIDAD_MEDIDA,
+		'UND' UNIDAD_MEDIDA,
+		ISNULL(A.VatSum,0) IMPUESTO,
+		B.DocType TIPO_DOC,
+		0.0000 IMPORTE_OTROS_IMPUESTOS,
+		0.0000 TOTAL_DESCUENTO_LINEA
+	FROM RIN1 A
+	INNER JOIN OINV B
+	ON A.DocEntry  = B.DocEntry 
+	INNER JOIN OITM C
+	ON A.ItemCode =C.ItemCode 
+		inner join inv1 I 
+	ON I.DocEntry  = A.DocEntry 
+	WHERE A.DocEntry = @DOCENTRY
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	-----------------------------------------------------------------------
+	
+	
+	
+	
+	
+	
+	USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  StoredProcedure [dbo].[SP_IT_DATOS_ENCABEZADO]    Script Date: 2/21/2018 5:52:45 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER  PROCEDURE [dbo].[SP_IT_DATOS_ENCABEZADO] @Docentry int,@Tipo char(3)
+AS
+		SET ARITHABORT ON
+		 
+		IF @Tipo='FAC' or @Tipo='ND'
+		Select DISTINCT 
+				isnull([@FACE_RESOLUCION].U_DISPOSITIVO,'N/D') DISPOSITIVO,
+				DBO.ESTADO_DOC(@Docentry)   ESTADO_DOCUMENTO,
+				CASE OINV.DOCCUR WHEN 'QTZ' THEN 'GTQ' ELSE 'USD' END CODIGO_MONEDA,
+				DBO.TIPODOC_GFACE(isnull([@FACE_RESOLUCION].U_TIPO_DOC,'N/D')) TIPO_DOCUMENTO,
+				CASE oinv.LicTradNum
+                       When '000000000C.F.' Then 'C.F'
+                       When '0000000000C/F' Then 'C.F'
+                       Else SUBSTRING(replace(isnull(oinv.LicTradNum,'C.F'),'-',''), PATINDEX('%[^0 ]%', replace(isnull(oinv.LicTradNum,'C.F'),'-','') + ' '), LEN(replace(isnull(oinv.LicTradNum,'C.F'),'-','')))
+                End NIT_COMPRADOR,
+				isnull(dbo.ufn_ValorParametro('NIT'),'N/D') NIT_VENDEDOR,
+				'FACTHOREB' SERIE_AUTORIZADA,
+				oinv.doctotal  TOTAL_DOCUMENTO,
+				CONVERT(VARCHAR,OINV.DocDate,126) FECHA_DOCUMENTO,
+				ISNULL(RIN1.DOCDATE,getdate()) FECHA_ANULACION,
+				ISNULL(OINV.Comments,'N/D') OBSERVACIONES,
+				ISNULL(OCRD.phone1,'N/D') TELEFONO_COMPRADOR,
+				0.0 IMPORTE_DESCUENTO,
+				DBO.TOTAL_EXENTO(@Docentry,@Tipo) TOTAL_EXENTO,
+				OINV.DocTotal IMPORTE_NETO_GRAVADO,
+				OINV.VatSum DETALLE_IMPUESTO_IVA,
+				isnull(oinv.DocRate,0) TIPO_CAMBIO,
+				ISNULL(OINV.[Address], 'CIUDAD') DIRECCION_COMPRADOR,
+				--'CIUDAD' DIRECCION_COMPRADOR,
+				0.0 IMPORTE_OTROS_IMPUESTOS,
+				isnull([@FACE_RESOLUCION].U_RESOLUCION,'N/D') NUMERO_RESOLUCION,
+				isnull(ocrd.city,'Guatemala') MUNICIPIO_COMPRADOR,
+				isnull(ocrd.County,'Guatemala') DEPARTAMENTO_COMPRADOR,
+				isnull(oinv.CardName,'Consumidor Final')  NOMBRE_COMPRADOR,
+				isnull(dbo.ufn_ValorParametro('NOMC'),'N/D') NOMBRE_VENDEDOR,
+				--CASE WHEN OINV.SERIES IN(84,371) THEN 'Guatemala' ELSE 'Mazatenando' end  MUNICIPIO_VENDEDOR,
+				--CASE WHEN OINV.SERIES NOT IN(84,371) THEN 'Guatemala' ELSE 'Suchitepequez' end DEPARTAMENTO_VENDEDOR,
+				isnull(convert(varchar,[@FACE_RESOLUCION].U_MUNI_SUCURSAL),'Guatemala') MUNICIPIO_VENDEDOR,
+				isnull(convert(varchar,[@FACE_RESOLUCION].U_DEPTO_SUCURSAL),'Guatemala') DEPARTAMENTO_VENDEDOR,
+				isnull(dbo.ufn_ValorParametro('DIRE'),'N/D') DIRECCION_VENDEDOR,
+				replace(CONVERT(varchar,[@FACE_RESOLUCION].U_FECHA_AUTORIZACION,111),'/','-') FECHA_RESOLUCION,
+				'RET_DEFINITIVA' REGIMEN_ISR,
+				OINV.DocTotal - OINV.VatSum IMPORTE_BRUTO,
+				'12521337' NIT_GFACE,
+				isnull([@FACE_RESOLUCION].U_SUCURSAL,'N/D') CODIGO_SUCURSAL,
+				CASE ISNULL(OCRD.E_MAIL,'N/D') WHEN 'N/D' THEN 'N/D' ELSE DBO.OBTIENE_CORREO(OCRD.E_MAIL) END CORREO_COMPRADOR,
+				'N/D' DESCRIPCION_OTROS_IMPUESTOS,
+				CASE OINV.SERIES WHEN 29 THEN OINV.DocNum ELSE DBO.CORRIGEDOC_NUM(OINV.DocNum) END NUMERO_DOCUMENTO,
+				OINV.DocType TIPO_DOC,
+				'' PERSONALIZADO_1,
+				'' PERSONALIZADO_2,
+				'' PERSONALIZADO_3,
+				'' PERSONALIZADO_4,
+				'' PERSONALIZADO_5,
+				'' PERSONALIZADO_6,
+				'' PERSONALIZADO_7,
+				'' PERSONALIZADO_8,
+				'' PERSONALIZADO_9,
+				'' PERSONALIZADO_10,
+				'' PERSONALIZADO_11,
+				'' PERSONALIZADO_12,
+				'' PERSONALIZADO_13,
+				'' PERSONALIZADO_14,
+				'' PERSONALIZADO_15,
+				'' PERSONALIZADO_16,
+				'' PERSONALIZADO_17,
+				'' PERSONALIZADO_18,
+				'' PERSONALIZADO_19,
+				'' PERSONALIZADO_20					
+			from OINV 
+				left outer join [@FACE_RESOLUCION]
+				on [@FACE_RESOLUCION].U_SERIE=OINV.series
+				left outer join  OCRD 
+				on ocrd.CardCode =oinv.CardCode
+				INNER JOIN NNM1 on oinv.Series =NNM1.Series 
+				LEFT OUTER JOIN CRD1
+				ON OCRD.CARDCODE=CRD1.CARDCODE
+				LEFT OUTER JOIN RIN1
+				ON OINV.DocNum =RIN1.BaseDocNum
+				AND RIN1. BaseType=13
+			where OINV.DocEntry =@Docentry
+	IF @Tipo='NC'
+			Select DISTINCT 
+				isnull([@FACE_RESOLUCION].U_DISPOSITIVO,'N/D') DISPOSITIVO,
+				'ACTIVO' ESTADO_DOCUMENTO,
+				CASE OINV.DOCCUR WHEN 'QTZ' THEN 'GTQ' ELSE 'USD' END CODIGO_MONEDA,
+				DBO.TIPODOC_GFACE(isnull([@FACE_RESOLUCION].U_TIPO_DOC,'N/D')) TIPO_DOCUMENTO,
+                CASE oinv.LicTradNum
+                       When '000000000C.F.' Then 'C.F'
+                       When '0000000000C/F' Then 'C.F'
+                       Else SUBSTRING(replace(isnull(oinv.LicTradNum,'C.F'),'-',''), PATINDEX('%[^0 ]%', replace(isnull(oinv.LicTradNum,'C.F'),'-','') + ' '), LEN(replace(isnull(oinv.LicTradNum,'C.F'),'-','')))
+                End NIT_COMPRADOR,
+				isnull(dbo.ufn_ValorParametro('NIT'),'N/D') NIT_VENDEDOR,
+				'FACTHOREB' SERIE_AUTORIZADA,
+				oinv.doctotal  TOTAL_DOCUMENTO,
+				CONVERT(VARCHAR,OINV.DocDate,126) FECHA_DOCUMENTO,
+				getdate() FECHA_ANULACION,
+				ISNULL(OINV.Comments,'N/D') OBSERVACIONES,
+				ISNULL(OCRD.phone1,'N/D') TELEFONO_COMPRADOR,
+				0.0 IMPORTE_DESCUENTO,
+				DBO.TOTAL_EXENTO(@Docentry,@Tipo) TOTAL_EXENTO,
+				OINV.DocTotal IMPORTE_NETO_GRAVADO,
+				OINV.VatSum DETALLE_IMPUESTO_IVA,
+				isnull(oinv.DocRate,0) TIPO_CAMBIO,
+				ISNULL(OINV.[Address], 'CIUDAD') DIRECCION_COMPRADOR,
+				0.0 IMPORTE_OTROS_IMPUESTOS,
+				isnull([@FACE_RESOLUCION].U_RESOLUCION,'N/D') NUMERO_RESOLUCION,
+				isnull(ocrd.city,'Guatemala') MUNICIPIO_COMPRADOR,
+				isnull(ocrd.County,'Guatemala') DEPARTAMENTO_COMPRADOR,
+				isnull(oinv.CardName,'Consumidor Final')  NOMBRE_COMPRADOR,
+				isnull(dbo.ufn_ValorParametro('NOMC'),'N/D') NOMBRE_VENDEDOR,
+				isnull(convert(varchar,[@FACE_RESOLUCION].U_MUNI_SUCURSAL),'Guatemala') MUNICIPIO_VENDEDOR,
+				isnull(convert(varchar,[@FACE_RESOLUCION].U_DEPTO_SUCURSAL),'Guatemala') DEPARTAMENTO_VENDEDOR,
+				isnull(dbo.ufn_ValorParametro('DIRE'),'N/D') DIRECCION_VENDEDOR,
+				replace(CONVERT(varchar,[@FACE_RESOLUCION].U_FECHA_AUTORIZACION,111),'/','-') FECHA_RESOLUCION,
+				'RET_DEFINITIVA' REGIMEN_ISR,
+				OINV.DocTotal - OINV.VatSum IMPORTE_BRUTO,
+				'12521337' NIT_GFACE,
+				isnull([@FACE_RESOLUCION].U_SUCURSAL,'N/D') CODIGO_SUCURSAL,
+				CASE ISNULL(OCRD.E_MAIL,'N/D') WHEN 'N/D' THEN 'N/D' ELSE DBO.OBTIENE_CORREO(OCRD.E_MAIL) END CORREO_COMPRADOR,
+				'N/D' DESCRIPCION_OTROS_IMPUESTOS,
+				CASE OINV.SERIES WHEN 29 THEN OINV.DocNum ELSE DBO.CORRIGEDOC_NUM(OINV.DocNum) END NUMERO_DOCUMENTO,
+				OINV.DocType TIPO_DOC,
+				'' PERSONALIZADO_1,
+				'' PERSONALIZADO_2,
+				'' PERSONALIZADO_3,
+				'' PERSONALIZADO_4,
+				'' PERSONALIZADO_5,
+				'' PERSONALIZADO_6,
+				'' PERSONALIZADO_7,
+				'' PERSONALIZADO_8,
+				'' PERSONALIZADO_9,
+				'' PERSONALIZADO_10,
+				'' PERSONALIZADO_11,
+				'' PERSONALIZADO_12,
+				'' PERSONALIZADO_13,
+				'' PERSONALIZADO_14,
+				'' PERSONALIZADO_15,
+				'' PERSONALIZADO_16,
+				'' PERSONALIZADO_17,
+				'' PERSONALIZADO_18,
+				'' PERSONALIZADO_19,
+				'' PERSONALIZADO_20						
+			from ORIN OINV 
+				left outer join [@FACE_RESOLUCION]
+				on [@FACE_RESOLUCION].U_SERIE=OINV.series
+				left outer join  OCRD 
+				on ocrd.CardCode =oinv.CardCode
+				INNER JOIN NNM1 on oinv.Series =NNM1.Series 
+				LEFT OUTER JOIN CRD1
+				ON OCRD.CARDCODE=CRD1.CARDCODE
+			where OINV.DocEntry =@Docentry
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			-----------------------------------------------------------------
+			
+			
+			
+			
+			
+			
+			
+			
+			USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  StoredProcedure [dbo].[SPFACE_DATOSDOC]    Script Date: 2/21/2018 5:53:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[SPFACE_DATOSDOC]
+@DOCENETRY INT
+AS
+SELECT
+	C.U_TIPO_DOC Tipo,
+	B.Series,
+	A.DocNum,
+	ISNULL(B.BEGINSTR,B.SeriesName) SeriesName, 
+	A.DocEntry 
+FROM OINV A
+INNER JOIN NNM1 B
+ON A.Series=B.Series 
+OR B.EndStr =-1 AND B.ObjectCode = 13
+INNER JOIN [@FACE_RESOLUCION] C
+ON C.U_SERIE =B.Series 
+WHERE A.DocEntry =  @DOCENETRY
+UNION 
+SELECT
+	C.U_TIPO_DOC Tipo,
+	B.Series,
+	A.DocNum,
+	ISNULL(B.BEGINSTR,B.SeriesName) SeriesName, 
+	A.DocEntry 
+FROM ORIN A
+INNER JOIN NNM1 B
+ON A.Series=B.Series 
+OR B.EndStr =-1 AND B.ObjectCode = 14
+INNER JOIN [@FACE_RESOLUCION] C
+ON C.U_SERIE =B.Series 
+WHERE A.DocEntry =  @DOCENETRY
+UNION
+SELECT
+	C.U_TIPO_DOC Tipo,
+	B.Series,
+	A.DocNum,
+	ISNULL(B.BEGINSTR,B.SeriesName) SeriesName, 
+	A.DocEntry 
+FROM OPCH A
+INNER JOIN NNM1 B
+ON A.Series=B.Series 
+OR B.EndStr =-1 AND B.ObjectCode = 16
+INNER JOIN [@FACE_RESOLUCION] C
+ON C.U_SERIE =B.Series 
+WHERE A.DocEntry =  @DOCENETRY
+
+
+
+
+
+----------------------------------------------------------------
+
+
+
+
+
+	
+	
+	
+	
+	
+	
+	

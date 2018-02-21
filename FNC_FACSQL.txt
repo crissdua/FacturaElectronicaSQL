@@ -1,0 +1,280 @@
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[CORRIGEDOC_NUM]    Script Date: 2/21/2018 5:53:45 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[CORRIGEDOC_NUM](@DOCNUM VARCHAR(20)) RETURNS VARCHAR(20)
+AS 
+BEGin
+ 
+ DECLARE @POSINI INT
+ DECLARE @RESULT VARCHAR(20)
+ 
+ SET @POSINI=CHARINDEX('0',@DOCNUM)
+ SET @RESULT=SUBSTRING(@DOCNUM,@POSINI+1,LEN(@DOCNUM))
+ 
+ RETURN @RESULT
+ 
+END
+
+
+
+------------------------------------------------------
+
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[ESTADO_DOC]    Script Date: 2/21/2018 5:54:17 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[ESTADO_DOC](@docentry int) RETURNS varchar(10) 
+AS 
+BEGin
+ 
+/*  DECLARE @COUNT INT 
+ DECLARE @docnum int */
+	DECLARE @RESULT VARCHAR(10)
+	DECLARE @STATUS VARCHAR(10)
+ 
+/*  select @docnum = docnum 
+ from OINV 
+ where DocEntry =@docentry
+
+ select @COUNT=COUNT(1)
+ from OJDT 
+ where Ref2=convert(varchar,@docnum) 
+ and  TransType =14 
+ 
+ IF @COUNT > 0 
+  SET @RESULT= 'ANULADO'
+ ELSE
+  SET @RESULT= 'ACTIVO' */
+  
+	SELECT @STATUS=CANCELED
+	FROM OINV
+	WHERE DocEntry = @docentry
+  
+	IF @STATUS = 'N'
+		SET @RESULT = 'ACTIVO'
+	ELSE
+		SET @RESULT = 'ANULADO'
+ 
+ RETURN @RESULT
+END
+
+
+
+----------------------------------------------------
+
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[OBTIENE_CORREO]    Script Date: 2/21/2018 5:54:30 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[OBTIENE_CORREO](@CORREO VARCHAR(MAX)) RETURNS varchar(MAX) 
+AS 
+BEGin
+
+	DECLARE @RESULT varchar(MAX)
+	
+	IF CHARINDEX(';',@CORREO)=0
+		SET @RESULT =@CORREO
+	ELSE 
+		select top 1 @RESULT=Splitcolumn from UDF_Split(@CORREO,';')
+		
+	RETURN @RESULT
+END
+
+
+
+
+
+
+---------------------------------------------------
+
+
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[TIPODOC_GFACE]    Script Date: 2/21/2018 5:54:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[TIPODOC_GFACE](@CODE INT) RETURNS varchar(20) 
+AS 
+BEGin
+
+	DECLARE @RESULT varchar(20)
+	
+	select @RESULT=Code 
+	from [@FACE_TIPODOC]
+	WHERE U_CODIGO = @CODE
+
+	RETURN @RESULT
+END
+
+
+
+
+-----------------------------------------------------
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[TOTAL_EXENTO]    Script Date: 2/21/2018 5:55:00 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[TOTAL_EXENTO](@DOCENTRY VARCHAR(20),@TIPO_DOC CHAR(4)) RETURNS DECIMAL(18,4) 
+AS 
+BEGin 
+	DECLARE @RESULT DECIMAL(18,4)
+	
+	IF @TIPO_DOC='FAC' OR @TIPO_DOC='ND'
+		--select @RESULT=isnull(sum( case doctype when 'S' then 1 else b.Quantity end * b.PriceAfVat),0)  Cambio asandoval para reportar en exento lo requerido por wmontenegro 29/10/14
+		select @RESULT=isnull(sum(LineTotal),0)
+		from oinv a
+		inner join INV1 b
+		on a.DocEntry=b.docentry
+		where a.docentry =  @DOCENTRY
+		and   b.TaxCode='EXE'
+	ELSE
+		--select @RESULT=isnull(sum( case doctype when 'S' then 1 else b.Quantity end * b.PriceAfVat),0)
+		select @RESULT=isnull(sum(LineTotal),0)
+		from ORIN a
+		inner join RIN1  b
+		on a.DocEntry=b.docentry
+		where a.docentry =  @DOCENTRY
+		and   b.TaxCode='EXE'
+			
+	RETURN @RESULT 
+END
+
+
+
+
+
+
+
+
+-----------------------------------------------
+
+
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[ufn_EstadoDocumento]    Script Date: 2/21/2018 5:55:22 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[ufn_EstadoDocumento](@DocEntry int)
+RETURNS char(1)
+AS
+begin
+	DECLARE @DocEntryNC int
+	DECLARE @SerieNC int
+	DECLARE @Result CHAR(1)
+
+	select distinct @DocEntryNC=isnull(TrgetEntry,0) 
+	from INV1
+	where DocEntry =@DocEntry and isnull(TrgetEntry,0) <>0
+	
+
+	SELECT @SerieNC=B.Series 
+	FROM NNM1 A
+	INNER JOIN ORIN B
+	ON A.Series = B.Series 
+	WHERE DocEntry =@DocEntryNC
+
+	IF @SerieNC=3 OR @SerieNC=418 
+		set @Result='A'
+	ELSE
+		set @Result='V';
+
+      return @result 
+end
+
+
+
+
+
+
+
+
+
+-------------------------------------------------
+
+
+
+
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[ufn_EstadoDocumentoNC]    Script Date: 2/21/2018 5:55:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[ufn_EstadoDocumentoNC](@DocEntry int)
+RETURNS char(1)
+AS
+begin
+	DECLARE @Result CHAR(1)
+	select @result=U_DocstatusCC from ORIN where DocEntry =@DocEntry
+    return @result 
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------
+
+
+
+
+
+USE [BASEFINAL_PRUEBAS]
+GO
+/****** Object:  UserDefinedFunction [dbo].[ufn_ValorParametro]    Script Date: 2/21/2018 5:55:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[ufn_ValorParametro](@Parametro varchar(300))
+RETURNS varchar(300)
+AS
+begin
+	declare @result varchar(300)
+	
+	select @Result=U_VALOR 
+	from [@FACE_PARAMETROS] 
+	where U_PARAMETRO =@Parametro 
+	return @result 
+end
+
+
