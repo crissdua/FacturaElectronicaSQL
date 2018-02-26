@@ -344,41 +344,25 @@ Public Class ParametrosForm
             'Guarda el valor del PDFPath
             oItem = oForm.Items.Item("txtPathPDF")
             oEdit = oItem.Specific
-            If oEdit.Value.Trim = "" Then
-                oForm.PaneLevel = 1
-                oEdit.Active = True
-                oItem = oForm.Items.Item("tabGen")
-                oTab = oItem.Specific
-                oTab.Select()
-                Throw New Exception("Debe de Ingresar el Path del PDF")
-            End If
-            Me.GuardaParametro(oUsrTbl, "PATHPDF", oEdit.Value)
+            'Me.GuardaParametro(oUsrTbl, "PATHPDF", oEdit.Value)
             ProgressBar.Value += 1
 
             oItem = oForm.Items.Item("txtEmailF")
             oEdit = oItem.Specific
-            If oEdit.Value.Trim = "" Then
-                oForm.PaneLevel = 1
-                oEdit.Active = True
-                oItem = oForm.Items.Item("tabGen")
-                oTab = oItem.Specific
-                oTab.Select()
-                Throw New Exception("Debe de ingresa el Email From")
-            End If
-            Me.GuardaParametro(oUsrTbl, "EMAILF", oEdit.Value)
+            'Me.GuardaParametro(oUsrTbl, "EMAILF", oEdit.Value)
             ProgressBar.Value += 1
 
             oItem = oForm.Items.Item("cmbSAP")
             oCmb = oItem.Specific
-            If oCmb.Value.Trim = "" Then
-                oForm.PaneLevel = 1
-                oEdit.Active = True
-                oItem = oForm.Items.Item("tabGen")
-                oTab = oItem.Specific
-                oTab.Select()
-                Throw New Exception("Debe de indicar si SAP manejara el correlativo de los documentos")
-            End If
-            Me.GuardaParametro(oUsrTbl, "ASS", oCmb.Value)
+            'If oCmb.Value.Trim = "" Then
+            '    oForm.PaneLevel = 1
+            '    oEdit.Active = True
+            '    oItem = oForm.Items.Item("tabGen")
+            '    oTab = oItem.Specific
+            '    oTab.Select()
+            '    Throw New Exception("Debe de indicar si SAP manejara el correlativo de los documentos")
+            'End If
+            'Me.GuardaParametro(oUsrTbl, "ASS", oCmb.Value)
             ProgressBar.Value += 1
 
             oItem = oForm.Items.Item("txtPrefix")

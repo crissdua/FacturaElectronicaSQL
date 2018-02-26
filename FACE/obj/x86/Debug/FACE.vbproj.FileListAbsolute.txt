@@ -195,3 +195,17 @@ C:\Users\Developer\Desktop\FACE electronica\FACE\obj\x86\Debug\FACE.vbprojResolv
 C:\Users\Developer\Desktop\FACE electronica\FACE\obj\x86\Debug\FACE.License.resources
 C:\Users\Developer\Desktop\FACE electronica\FACE\obj\x86\Debug\FACE.Resources.resources
 C:\Users\Developer\Desktop\FACE electronica\FACE\obj\x86\Debug\FACE.vbproj.GenerateResource.Cache
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\bin\Debug\FACE.exe.config
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\bin\Debug\FACE.exe
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\bin\Debug\FACE.pdb
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\bin\Debug\FACE.xml
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.vbprojResolveAssemblyReference.cache
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\Interop.SAPbobsCOM.dll
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\Interop.SAPbouiCOM.dll
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.vbproj.ResolveComReference.cache
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.License.resources
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.Resources.resources
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.vbproj.GenerateResource.Cache
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.exe
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.xml
+C:\Users\Developer\Desktop\FACE electronica - Peña\FACE\obj\x86\Debug\FACE.pdb

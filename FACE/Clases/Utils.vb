@@ -1808,8 +1808,8 @@ Module Utils
                 Dim TipoDoc() As String = TraeDato("select code from [@FACE_TIPODOC] where U_codigo ='" & obRES.Rows(0)("U_TIPO_DOC").ToString & "'").Split("-")
                 dte.tipoDocumento = TipoDoc(0)
                 log += ContruyeLog(SBO_Application, "tipoDocumento", dte.tipoDocumento) & vbNewLine
-                dte.nitComprador = obOINV.Rows(0)("U_Nit").ToString
-                log += ContruyeLog(SBO_Application, "nitComprador", obOINV.Rows(0)("U_Nit").ToString) & vbNewLine
+                dte.nitComprador = obOCRD.Rows(0)("U_NIT").ToString
+                log += ContruyeLog(SBO_Application, "nitComprador", obOCRD.Rows(0)("U_NIT").ToString) & vbNewLine
                 dte.nitVendedor = ObtieneValorParametro(OCompany, SBO_Application, "NIT")
                 log += ContruyeLog(SBO_Application, "nitVendedor", ObtieneValorParametro(OCompany, SBO_Application, "NIT")) & vbNewLine
                 Dim series As String = TraeDato("select isnull(name,'falta_serie en tabla') from [@FACE_SERIES] where code ='" & CurrSerie & "'")
@@ -1851,8 +1851,8 @@ Module Utils
 
                 dte.observaciones = IIf(obOINV.Rows(0)("comments").ToString = "", "N/D", obOINV.Rows(0)("comments").ToString)
                 log += ContruyeLog(SBO_Application, "observaciones", IIf(obOINV.Rows(0)("comments").ToString = "", "N/D", obOINV.Rows(0)("comments").ToString)) & vbNewLine
-                dte.telefonoComprador = IIf(obOCRD.Rows(0)("u_telefono").ToString = "", "N/D", obOCRD.Rows(0)("u_telefono").ToString)
-                log += ContruyeLog(SBO_Application, "telefonoComprador", IIf(obOCRD.Rows(0)("u_telefono").ToString = "", "N/D", obOCRD.Rows(0)("u_telefono").ToString)) & vbNewLine
+                dte.telefonoComprador = IIf(obOCRD.Rows(0)("phone1").ToString = "", "N/D", obOCRD.Rows(0)("phone1").ToString)
+                log += ContruyeLog(SBO_Application, "telefonoComprador", IIf(obOCRD.Rows(0)("phone1").ToString = "", "N/D", obOCRD.Rows(0)("phone1").ToString)) & vbNewLine
                 dte.importeDescuento = Convert.ToDouble(0.0)
                 log += ContruyeLog(SBO_Application, "importeDescuento", Convert.ToDouble(0.0).ToString) & vbNewLine
                 dte.importeDescuentoSpecified = True

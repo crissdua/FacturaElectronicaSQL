@@ -1,3 +1,26 @@
+
+
+
+CREATE PROCEDURE [dbo].[FACTURA_FACE_LINEA](@DOCENTRY AS VARCHAR(56), @TIPO AS VARCHAR(56))
+AS
+declare @firma as nvarchar(200)
+if @tipo = 'FAC' or @tipo = 'ND'
+set @firma = (select isnull(U_FIRMA_ELETRONICA,'0') from OINV where DocEntry = @DOCENTRY)
+	if @firma = '0' 
+		SELECT C.Series,A.DocNum, C.SeriesName,'GT' AS PAIS,A.DocEntry    FROM OINV A 
+		INNER JOIN NNM1 C ON C.Series = C.Series  
+		INNER JOIN [@FACE_SERIES]  B ON C.Series = B.Code  
+		WHERE A.DocEntry = @DOCENTRY AND B.U_LINEA = '01'
+
+if @tipo = 'NC'
+set @firma = (select isnull(U_FIRMA_ELETRONICA,'0') from ORIN where DocEntry = @DOCENTRY)
+	if @firma = '0'
+		SELECT C.Series,A.DocNum, C.SeriesName,'GT' AS PAIS,A.DocEntry    FROM ORIN A 
+		INNER JOIN NNM1 C ON C.Series = C.Series  
+		INNER JOIN [@FACE_SERIES]  B ON C.Series = B.Code  
+		WHERE A.DocEntry = @DOCENTRY AND B.U_LINEA = '01'
+
+-------------------------------------------------------------------------------------------------
 USE [BASEFINAL_PRUEBAS]
 GO
 /****** Object:  StoredProcedure [dbo].[SP_INT_LISTADOBATCH]    Script Date: 2/21/2018 5:52:03 PM ******/

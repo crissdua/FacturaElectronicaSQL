@@ -139,6 +139,8 @@ Public Class SystemForm
 
             'Utils.AddUserField(oCompany, "FACE_PAISEQUIV", "COD_PAIS_SAP", "CODIGO PAIS SAP", SAPbobsCOM.BoFieldTypes.db_Alpha, 15)
             'Utils.AddUserField(oCompany, "FACE_PAISEQUIV", "COD_PAIS_GUATEF", "CODIGO PAIS GUATEFACTURAS", SAPbobsCOM.BoFieldTypes.db_Alpha, 15)
+            '*-----------------------FACE SERIES
+            Utils.AddUserField(oCompany, "FACE_SERIES", "LINEA", "LINEA", SAPbobsCOM.BoFieldTypes.db_Alpha, 15,)
 
             Utils.AddUserField(oCompany, "FACE_TIPODOC", "CODIGO", "CODIGO DOCUMENTO", SAPbobsCOM.BoFieldTypes.db_Alpha, 15)
             Utils.AddUserField(oCompany, "FACE_TIPODOC", "DESCRIPCION", "DESC TIPO DE DOC", SAPbobsCOM.BoFieldTypes.db_Alpha, 250)
@@ -163,6 +165,7 @@ Public Class SystemForm
             Utils.AddUserField(oCompany, "FACE_RESOLUCION", "USUARIO", "USUARIO GFACE", SAPbobsCOM.BoFieldTypes.db_Memo, 8000)
             Utils.AddUserField(oCompany, "FACE_RESOLUCION", "CLAVE", "CLAVE GFACE", SAPbobsCOM.BoFieldTypes.db_Memo, 8000)
 
+            Utils.AddUserField(oCompany, "OCRD", "NIT", "NIT", SAPbobsCOM.BoFieldTypes.db_Alpha, 15, False)
             Utils.AddUserField(oCompany, "OINV", "ESTADO_FACE", "ESTADO FACE", SAPbobsCOM.BoFieldTypes.db_Alpha, 10, False)
             Utils.AddUserField(oCompany, "OINV", "FACE_XML", "XML ENVIADO FACE", SAPbobsCOM.BoFieldTypes.db_Memo, 254, False)
             Utils.AddUserField(oCompany, "OINV", "MOTIVO_RECHAZO", "RECHAZO FACE", SAPbobsCOM.BoFieldTypes.db_Memo, 254, False)
@@ -423,116 +426,117 @@ Public Class SystemForm
 
 
     Private Sub moSBOApplication_FormDataEvent(ByRef BusinessObjectInfo As SAPbouiCOM.BusinessObjectInfo, ByRef BubbleEvent As Boolean) Handles SBO_Application.FormDataEvent
-      
-        If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "133" And BusinessObjectInfo.ActionSuccess = True Then
-            Dim xml As New Xml.XmlDocument
-            Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+        Try
+            If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "133" And BusinessObjectInfo.ActionSuccess = True Then
+                Dim xml As New Xml.XmlDocument
+                Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-            xml.LoadXml(BusinessObjectInfo.ObjectKey)
-            Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                xml.LoadXml(BusinessObjectInfo.ObjectKey)
+                Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                Dim oRecord As SAPbobsCOM.Recordset
+                oRecord = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
+                Dim QryStr As String
+                QryStr = "EXEC FACTURA_FACE_LINEA " & DocEntry(0).InnerText & ",'FAC'"
+                oRecord.DoQuery(QryStr)
+                If oRecord.RecordCount < 0 Then
+                    Return
 
-            If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
-                'Dim xmldoc As New XmlDataDocument()
-                'Dim xmlnode As XmlNodeList
-                'Dim i As Integer
-                'Dim str As String
-                'Dim fs As New FileStream("C:\Users\Josue\Downloads\RespFACA237.xml", FileMode.Open, FileAccess.Read)
-                'xmldoc.Load(fs)
-                'xmlnode = xmldoc.GetElementsByTagName("Product")
-                'Dim fechaResol As Xml.XmlNodeList = xmldoc.GetElementsByTagName("FechaResolucion")
-                'Dim nitGface As Xml.XmlNodeList = xmldoc.GetElementsByTagName("NITGFACE")
-                'Dim nAutorizacion As Xml.XmlNodeList = xmldoc.GetElementsByTagName("NumeroAutorizacion")
-                'Dim IniAut As Xml.XmlNodeList = xmldoc.GetElementsByTagName("rangoInicialAutorizado")
-                'Dim FinAut As Xml.XmlNodeList = xmldoc.GetElementsByTagName("rangoFinalAutorizado")
-                'Dim serieF As Xml.XmlNodeList = xmldoc.GetElementsByTagName("Serie")
-                'Dim docF As Xml.XmlNodeList = xmldoc.GetElementsByTagName("uniqueCreatorIdentification")
-                'str = xmldoc.ChildNodes.Item(1).ChildNodes(0).ChildNodes(1).ChildNodes(1).ChildNodes(1).InnerText
-                'Dim fields As String
-                'fields = "U_ESTADO_FACE='A',"
-                'fields += "U_FACE_XML='" & Replace(xmldoc.InnerXml, "'", "''''") & "',"
-                'fields += "U_FACE_PDFFILE=null,"
-                'fields += "U_FIRMA_ELETRONICA='" & str & "',"
-                'fields += "U_NUMERO_DOCUMENTO='" & docF(0).InnerText & "',"
-                'fields += "U_NUMERO_RESOLUCION='" & nAutorizacion(0).InnerText & "',"
-                'fields += "U_SERIE_FACE='" & serieF(0).InnerText & "',"
-                'fields += "U_FACTURA_INI='" & IniAut(0).InnerText & "',"
-                'fields += "U_FACTURA_FIN='" & FinAut(0).InnerText & "' "
 
-                EnviaDocumento(oCompany, SBO_Application, "FAC", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+
+                End If
+
+                Utils.EnviaDocumentoInFile(oCompany, SBO_Application, "FAC", oRecord.Fields.Item("Series").Value, "", oRecord.Fields.Item("SeriesName").Value, oRecord.Fields.Item("PAIS").Value, oRecord.Fields.Item("DocEntry").Value, True)
+
             End If
-        End If
 
-        If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "141" And BusinessObjectInfo.ActionSuccess = True Then
-            Dim xml As New Xml.XmlDocument
-            Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+            If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "141" And BusinessObjectInfo.ActionSuccess = True Then
+                Dim xml As New Xml.XmlDocument
+                Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-            xml.LoadXml(BusinessObjectInfo.ObjectKey)
-            Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                xml.LoadXml(BusinessObjectInfo.ObjectKey)
+                Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
 
-            If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
-                EnviaDocumento(oCompany, SBO_Application, "FACP", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
+                    EnviaDocumento(oCompany, SBO_Application, "FACP", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                End If
             End If
-        End If
 
 
-        If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "60091" And BusinessObjectInfo.ActionSuccess = True Then
-            Dim xml As New Xml.XmlDocument
-            Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+            If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "60091" And BusinessObjectInfo.ActionSuccess = True Then
+                Dim xml As New Xml.XmlDocument
+                Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-            xml.LoadXml(BusinessObjectInfo.ObjectKey)
-            Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                xml.LoadXml(BusinessObjectInfo.ObjectKey)
+                Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
 
-            If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
-                EnviaDocumento(oCompany, SBO_Application, "FAC", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
+                    EnviaDocumento(oCompany, SBO_Application, "FAC", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                End If
             End If
-        End If
 
-        If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "60090" And BusinessObjectInfo.ActionSuccess = True Then
-            Dim xml As New Xml.XmlDocument
-            Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+            If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "60090" And BusinessObjectInfo.ActionSuccess = True Then
+                Dim xml As New Xml.XmlDocument
+                Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-            xml.LoadXml(BusinessObjectInfo.ObjectKey)
-            Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                xml.LoadXml(BusinessObjectInfo.ObjectKey)
+                Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
 
-            If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
-                EnviaDocumento(oCompany, SBO_Application, "FAC", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
+                    EnviaDocumento(oCompany, SBO_Application, "FAC", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                End If
             End If
-        End If
 
-        If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "65303" And BusinessObjectInfo.ActionSuccess = True Then
-            Dim xml As New Xml.XmlDocument
-            Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+            If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "65303" And BusinessObjectInfo.ActionSuccess = True Then
+                Dim xml As New Xml.XmlDocument
+                Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-            xml.LoadXml(BusinessObjectInfo.ObjectKey)
-            Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                xml.LoadXml(BusinessObjectInfo.ObjectKey)
+                Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                Dim oRecord As SAPbobsCOM.Recordset
+                oRecord = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
+                Dim QryStr As String
+                QryStr = "EXEC FACTURA_FACE_LINEA " & DocEntry(0).InnerText & ",'ND'"
+                oRecord.DoQuery(QryStr)
+                If oRecord.RecordCount < 0 Then
+                    Return
+                End If
 
-            If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
-                EnviaDocumento(oCompany, SBO_Application, "ND", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                Utils.EnviaDocumentoInFile(oCompany, SBO_Application, "ND", oRecord.Fields.Item("Series").Value, "", oRecord.Fields.Item("SeriesName").Value, oRecord.Fields.Item("PAIS").Value, oRecord.Fields.Item("DocEntry").Value, True)
+
             End If
-        End If
 
-        If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "179" And BusinessObjectInfo.ActionSuccess = True Then
-            Dim xml As New Xml.XmlDocument
-            Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+            If (BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_ADD Or BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_UPDATE) And BusinessObjectInfo.FormTypeEx = "179" And BusinessObjectInfo.ActionSuccess = True Then
+                Dim xml As New Xml.XmlDocument
+                Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-            xml.LoadXml(BusinessObjectInfo.ObjectKey)
-            Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                xml.LoadXml(BusinessObjectInfo.ObjectKey)
+                Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+                Dim oRecord As SAPbobsCOM.Recordset
+                oRecord = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
+                Dim QryStr As String
+                QryStr = "EXEC FACTURA_FACE_LINEA " & DocEntry(0).InnerText & ",'NC'"
+                oRecord.DoQuery(QryStr)
+                If oRecord.RecordCount < 0 Then
+                    Return
+                End If
 
-            If SerieEsBatch(oCompany, SBO_Application, Serie.Value) = False Then
-                EnviaDocumento(oCompany, SBO_Application, "NC", Serie.Selected.Value, "", Serie.Selected.Description, Pais, DocEntry(0).InnerText)
+                Utils.EnviaDocumentoInFile(oCompany, SBO_Application, "NC", oRecord.Fields.Item("Series").Value, "", oRecord.Fields.Item("SeriesName").Value, oRecord.Fields.Item("PAIS").Value, oRecord.Fields.Item("DocEntry").Value, True)
+
             End If
-        End If
 
-        'If (BusinessObjectInfo.FormTypeEx = 133 Or BusinessObjectInfo.FormTypeEx = 179 Or BusinessObjectInfo.FormTypeEx = 65303 Or BusinessObjectInfo.FormTypeEx = 60091 Or BusinessObjectInfo.FormTypeEx = 60090) And BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_LOAD And BusinessObjectInfo.ActionSuccess Then
-        '    Dim xml As New Xml.XmlDocument
-        '    Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
+            'If (BusinessObjectInfo.FormTypeEx = 133 Or BusinessObjectInfo.FormTypeEx = 179 Or BusinessObjectInfo.FormTypeEx = 65303 Or BusinessObjectInfo.FormTypeEx = 60091 Or BusinessObjectInfo.FormTypeEx = 60090) And BusinessObjectInfo.EventType = SAPbouiCOM.BoEventTypes.et_FORM_DATA_LOAD And BusinessObjectInfo.ActionSuccess Then
+            '    Dim xml As New Xml.XmlDocument
+            '    Dim Serie As SAPbouiCOM.ComboBox = oOrderForm.Items.Item("88").Specific
 
-        '    xml.LoadXml(BusinessObjectInfo.ObjectKey)
-        '    Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
-        '    If Utils.EstadoFACE(oCompany, DocEntry(0).InnerText, "") <> "A" And Utils.ValidaSerie(oCompany, SBO_Application, ) Then
+            '    xml.LoadXml(BusinessObjectInfo.ObjectKey)
+            '    Dim DocEntry As Xml.XmlNodeList = xml.GetElementsByTagName("DocEntry")
+            '    If Utils.EstadoFACE(oCompany, DocEntry(0).InnerText, "") <> "A" And Utils.ValidaSerie(oCompany, SBO_Application, ) Then
 
-        '    End If
-        'End If
+            '    End If
+            'End If
+        Catch ex As Exception
+
+        End Try
     End Sub
 
     Private Sub SBO_Application_ItemEvent(ByVal FormUID As String, ByRef pVal As SAPbouiCOM.ItemEvent, ByRef BubbleEvent As Boolean) Handles SBO_Application.ItemEvent
@@ -952,15 +956,15 @@ Public Class SystemForm
                 oCreationPackage.String = "Proceso Batch de documentos"
                 oMenus.AddEx(oCreationPackage)
 
-                oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-                oCreationPackage.UniqueID = "procReenvioFACE"
-                oCreationPackage.String = "Reenvio de documentos"
-                oMenus.AddEx(oCreationPackage)
+                'oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+                'oCreationPackage.UniqueID = "procReenvioFACE"
+                'oCreationPackage.String = "Reenvio de documentos"
+                'oMenus.AddEx(oCreationPackage)
 
-                oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-                oCreationPackage.UniqueID = "ImpFACE"
-                oCreationPackage.String = "Archivos Config. Base de datos"
-                oMenus.AddEx(oCreationPackage)
+                'oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+                'oCreationPackage.UniqueID = "ImpFACE"
+                'oCreationPackage.String = "Archivos Config. Base de datos"
+                'oMenus.AddEx(oCreationPackage)
 
 
             Catch er As Exception ' Menu already exists
